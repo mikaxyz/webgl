@@ -7,7 +7,7 @@ mkdir -p gh-pages/examples
 
 # compile JS using Elm
 cd examples
-for i in crate cube first-person thwomp triangle; do
+for i in Crate Cube FirstPerson Thwomp Triangle ShadowMapping; do
   elm make $i.elm --output ../gh-pages/examples/$i.html
 done
 

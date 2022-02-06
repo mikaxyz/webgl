@@ -7,6 +7,7 @@ module WebGL exposing
     , clearColor, preserveDrawingBuffer
     , indexedTriangles, lines, lineStrip, lineLoop, points, triangleFan
     , triangleStrip
+    , FrameBuffer, frameBuffer, toHtmlWithFrameBuffers
     )
 
 {-| The WebGL API is for high performance rendering. Definitely read about
@@ -53,6 +54,7 @@ import Html exposing (Attribute, Html)
 import WebGL.Internal as I
 import WebGL.Settings exposing (Setting)
 import WebGL.Settings.DepthTest as DepthTest
+import WebGL.Texture exposing (Texture)
 
 
 {-| Mesh forms geometry from the specified vertices. Each vertex contains a
@@ -267,6 +269,17 @@ entityWith =
     Elm.Kernel.WebGL.entity
 
 
+{-| FrameBuffers
+-}
+type FrameBuffer
+    = FrameBuffer
+
+
+frameBuffer : ( Int, Int ) -> List Entity -> FrameBuffer
+frameBuffer ( width, height ) entities =
+    Elm.Kernel.WebGL.frameBuffer width height entities
+
+
 {-| Render a WebGL scene with the given html attributes, and entities.
 
 `width` and `height` html attributes resize the drawing buffer, while
@@ -298,6 +311,11 @@ when the canvas is created for the first time.
 toHtmlWith : List Option -> List (Attribute msg) -> List Entity -> Html msg
 toHtmlWith options attributes entities =
     Elm.Kernel.WebGL.toHtml options attributes entities
+
+
+toHtmlWithFrameBuffers : List FrameBuffer -> List Option -> List (Attribute msg) -> (List Texture -> List Entity) -> Html msg
+toHtmlWithFrameBuffers frameBuffers options attributes entities =
+    Elm.Kernel.WebGL.toHtmlWithFrameBuffers frameBuffers options attributes entities
 
 
 {-| Provides a way to enable features and change the scene behavior
