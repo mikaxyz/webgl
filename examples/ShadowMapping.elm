@@ -5,6 +5,7 @@ import Browser.Events
 import Html exposing (Html)
 import Html.Attributes exposing (height, style, width)
 import Math.Matrix4 as Mat4 exposing (Mat4)
+import Math.Vector2 exposing (Vec2)
 import Math.Vector3 as Vec3 exposing (Vec3, vec3)
 import Math.Vector4 exposing (Vec4)
 import WebGL exposing (FrameBuffer, Mesh, Shader)
@@ -43,9 +44,27 @@ view theta =
                         lightUniforms
                         theta
                 )
+
+        frameBuffer2 =
+            WebGL.frameBuffer ( 128, 128 )
+                (WebGL.entity
+                    preVertexShader
+                    preFragmentShader
+                    planeMesh
+                    { perspective = Mat4.makePerspective (180 / 3) 1 0.01 100
+                    , camera = Mat4.makeLookAt (vec3 5 10 10) (vec3 0 0 0) (vec3 0 1 0)
+                    }
+                    :: chair
+                        preVertexShader
+                        preFragmentShader
+                        { perspective = Mat4.makePerspective (180 / 3) 1 0.01 100
+                        , camera = Mat4.makeLookAt (vec3 5 10 10) (vec3 0 0 0) (vec3 0 1 0)
+                        }
+                        theta
+                )
     in
     WebGL.toHtmlWithFrameBuffers
-        [ frameBuffer ]
+        [ frameBuffer, frameBuffer2 ]
         [ WebGL.alpha True, WebGL.antialias, WebGL.depth 1 ]
         [ width 600
         , height 600
@@ -53,15 +72,24 @@ view theta =
         ]
         (\textures ->
             case textures of
-                lightMap :: _ ->
+                [ shadowMap, mirrorMap ] ->
                     WebGL.entity
                         vertexShader
                         fragmentShader
                         planeMesh
-                        (uniforms theta lightMap)
+                        (uniforms theta shadowMap mirrorMap)
+                        :: WebGL.entity
+                            vertexShader
+                            mirrorFragmentShader
+                            (cubeMeshM
+                                (Mat4.makeTranslate3 0 2.5 -5
+                                    |> Mat4.scale3 5 2.5 0.1
+                                )
+                            )
+                            (uniforms theta shadowMap mirrorMap)
                         :: chair vertexShader
                             fragmentShader
-                            (uniforms theta lightMap)
+                            (uniforms theta shadowMap mirrorMap)
                             theta
 
                 _ ->
@@ -147,12 +175,13 @@ type alias Uniforms =
     , camera : Mat4
     , lightMViewMatrix : Mat4
     , lightProjectionMatrix : Mat4
-    , texture : Texture
+    , shadowMap : Texture
+    , mirrorMap : Texture
     }
 
 
-uniforms : Float -> Texture -> Uniforms
-uniforms theta texture =
+uniforms : Float -> Texture -> Texture -> Uniforms
+uniforms theta shadowMap mirrorMap =
     let
         lightUniforms =
             { perspective = Mat4.makeOrtho -7 7 -7 7 -7 50
@@ -163,7 +192,8 @@ uniforms theta texture =
     , camera = Mat4.makeLookAt (vec3 5 10 10) (vec3 0 0 0) (vec3 0 1 0)
     , lightMViewMatrix = lightUniforms.camera
     , lightProjectionMatrix = lightUniforms.perspective
-    , texture = texture
+    , shadowMap = shadowMap
+    , mirrorMap = mirrorMap
     }
 
 
@@ -267,7 +297,7 @@ face color a b c d =
 -- Shaders
 
 
-vertexShader : Shader Vertex Uniforms { vcolor : Vec3, shadowPos : Vec4 }
+vertexShader : Shader Vertex Uniforms { vcolor : Vec3, shadowPos : Vec4, vuv : Vec2 }
 vertexShader =
     [glsl|
 
@@ -276,6 +306,7 @@ vertexShader =
         uniform mat4 perspective;
         uniform mat4 camera;
         varying vec3 vcolor;
+        varying vec2 vuv;
 
         //attribute vec3 aVertexPosition;
         //uniform mat4 uPMatrix;
@@ -291,19 +322,22 @@ vertexShader =
         void main (void) {
           gl_Position = perspective * camera * vec4(position, 1.0);
           vcolor = color;
+          vuv = position.xy / 5.0;
           shadowPos = texUnitConverter * lightProjectionMatrix * lightMViewMatrix * vec4(position, 1.0);
         }
 
     |]
 
 
-fragmentShader : Shader {} Uniforms { vcolor : Vec3, shadowPos : Vec4 }
+fragmentShader : Shader {} Uniforms { vcolor : Vec3, shadowPos : Vec4, vuv : Vec2 }
 fragmentShader =
     [glsl|
         precision mediump float;
         varying vec3 vcolor;
         varying vec4 shadowPos;
-        uniform sampler2D texture;
+        varying vec2 vuv;
+        uniform sampler2D shadowMap;
+        uniform sampler2D mirrorMap;
         //uniform vec3 uColor;
         float decodeFloat (vec4 color) {
           const vec4 bitShift = vec4(
@@ -322,7 +356,7 @@ fragmentShader =
           float amountInLight = 0.0;
           for (int x = -1; x <= 1; x++) {
             for (int y = -1; y <= 1; y++) {
-              float texelDepth = decodeFloat(texture2D(texture, fragmentDepth.xy + vec2(x, y) * texelSize));
+              float texelDepth = decodeFloat(texture2D(shadowMap, fragmentDepth.xy + vec2(x, y) * texelSize));
               if (fragmentDepth.z < texelDepth) {
                 amountInLight += 1.0;
               }
@@ -331,6 +365,62 @@ fragmentShader =
           amountInLight /= 9.0;
 
           gl_FragColor = vec4((0.5 + (amountInLight * 0.5)) * vcolor, 1.0);
+        }
+    |]
+
+
+mirrorFragmentShader : Shader {} Uniforms { vcolor : Vec3, shadowPos : Vec4, vuv : Vec2 }
+mirrorFragmentShader =
+    [glsl|
+        precision mediump float;
+        varying vec3 vcolor;
+        varying vec4 shadowPos;
+        varying vec2 vuv;
+        uniform sampler2D shadowMap;
+        uniform sampler2D mirrorMap;
+        void main(void) {
+          gl_FragColor = vec4(texture2D(mirrorMap, vuv).rgb, 1.0);
+        }
+    |]
+
+
+preVertexShader :
+    Shader Vertex
+        { perspective : Mat4
+        , camera : Mat4
+        }
+        { vcolor : Vec3 }
+preVertexShader =
+    [glsl|
+
+        attribute vec3 position;
+        attribute vec3 color;
+        uniform mat4 perspective;
+        uniform mat4 camera;
+        varying vec3 vcolor;
+
+        void main (void) {
+          gl_Position = perspective * camera * vec4(position, 1.0);
+          vcolor = color;
+//          vuv = position.xy;
+        }
+
+    |]
+
+
+preFragmentShader :
+    Shader {}
+        { perspective : Mat4
+        , camera : Mat4
+        }
+        { vcolor : Vec3 }
+preFragmentShader =
+    [glsl|
+        precision mediump float;
+        varying vec3 vcolor;
+
+        void main(void) {
+          gl_FragColor = vec4(vcolor, 1.0);
         }
     |]
 

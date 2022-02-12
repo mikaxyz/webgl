@@ -40,15 +40,8 @@ var _WebGL_entity = F5(function (settings, vert, frag, mesh, uniforms) {
 
 // eslint-disable-next-line no-unused-vars
 var _WebGL_frameBuffer = F3(function (width, height, entities) {
-  function createFrameBuffer() {
-    return {
-      width: width,
-      height: height
-    };
-  }
   return {
     $: __0_FRAMEBUFFER,
-    __$createFrameBuffer: createFrameBuffer,
     __entities: entities,
     width: width,
     height: height
@@ -501,6 +494,8 @@ var _WebGL_drawGL = F2(function (model, domNode) {
 
   function drawFrameBuffer(frameBuffer) {
     var targetTexture = gl.createTexture();
+    // TODO: Texture needs to cached per fb...
+    // var targetTexture = model.__cache.renderToTexture;
     gl.bindTexture(gl.TEXTURE_2D, targetTexture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
 
@@ -520,14 +515,12 @@ var _WebGL_drawGL = F2(function (model, domNode) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
-    // Create and bind the framebuffer
-    var fb = gl.createFramebuffer();
+    // Bind framebuffer
+    var fb = model.__cache.frameBuffer;
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
 
-
-
-    // create a depth renderbuffer
-    var depthBuffer = gl.createRenderbuffer();
+    // Bind depthBuffer
+    var depthBuffer = model.__cache.depthBuffer;
     gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
 
     // make a depth buffer and the same size as the targetTexture
@@ -937,6 +930,11 @@ function _WebGL_render(model) {
     // Memorize the initial stencil write mask, because
     // browsers may have different number of stencil bits
     model.__cache.STENCIL_WRITEMASK = gl.getParameter(gl.STENCIL_WRITEMASK);
+
+    if (model.hasFrameBuffers) {
+      model.__cache.frameBuffer = gl.createFramebuffer();
+      model.__cache.depthBuffer = gl.createRenderbuffer();
+    }
 
     // Render for the first time.
     // This has to be done in animation frame,
