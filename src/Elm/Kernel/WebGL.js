@@ -679,6 +679,13 @@ var _WebGL_drawGL = F2(function (model, domNode) {
   }
 
   if (model.hasFrameBuffers === true) {
+    if (!model.__cache.frameBuffer) {
+      model.__cache.frameBuffer = gl.createFramebuffer();
+    }
+    if (!model.__cache.depthBuffer) {
+      model.__cache.depthBuffer = gl.createRenderbuffer();
+    }
+
     var fbs = model.__frameBuffers;
     _WebGL_listEach(drawFrameBuffer, fbs);
 
@@ -930,11 +937,6 @@ function _WebGL_render(model) {
     // Memorize the initial stencil write mask, because
     // browsers may have different number of stencil bits
     model.__cache.STENCIL_WRITEMASK = gl.getParameter(gl.STENCIL_WRITEMASK);
-
-    if (model.hasFrameBuffers) {
-      model.__cache.frameBuffer = gl.createFramebuffer();
-      model.__cache.depthBuffer = gl.createRenderbuffer();
-    }
 
     // Render for the first time.
     // This has to be done in animation frame,
