@@ -304,8 +304,10 @@ var _WebGL_disableFunctions = [_WebGL_disableBlend, _WebGL_disableDepthTest, _We
 
 function _WebGL_doCompile(gl, src, type) {
   var shader = gl.createShader(type);
-  // Enable OES_standard_derivatives extension
-  gl.shaderSource(shader, '#extension GL_OES_standard_derivatives : enable\n' + src);
+  var extensions = "";
+  extensions += "#extension GL_OES_standard_derivatives : enable\n";
+  extensions += "#extension GL_EXT_frag_depth : enable\n"
+  gl.shaderSource(shader, extensions + src);
   gl.compileShader(shader);
   return shader;
 }
@@ -913,6 +915,7 @@ function _WebGL_render(model) {
     // Activate extensions
     gl.getExtension('OES_standard_derivatives');
     gl.getExtension('OES_element_index_uint');
+    gl.getExtension("EXT_frag_depth");
 
     model.__cache.gl = gl;
 
