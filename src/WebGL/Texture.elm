@@ -13,6 +13,7 @@ module WebGL.Texture
         , linearMipmapLinear
         , linearMipmapNearest
         , load
+        , loadCubeMap
         , loadWith
         , mirroredRepeat
         , nearest
@@ -114,6 +115,11 @@ loadWith { magnify, minify, horizontalWrap, verticalWrap, flipY } url =
     in
     expand magnify minify horizontalWrap verticalWrap
 
+{-| Load cube map
+-}
+loadCubeMap : { xPos: String, xNeg: String, yPos: String, yNeg: String, zPos: String, zNeg: String } -> Task Error Texture
+loadCubeMap {xPos, xNeg, yPos, yNeg, zPos, zNeg} =
+  Elm.Kernel.Texture.loadCube xPos xNeg yPos yNeg zPos zNeg
 
 {-| `Options` describe how to:
 

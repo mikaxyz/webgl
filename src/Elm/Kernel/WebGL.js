@@ -758,6 +758,21 @@ function _WebGL_createUniformSetters(gl, model, program, uniformsMap) {
             currentUniforms[uniformName] = value;
           }
         };
+      case gl.SAMPLER_CUBE:
+        var currentTexture = textureCounter++;
+        return function (texture) {
+          gl.activeTexture(gl.TEXTURE0 + currentTexture);
+          var tex = cache.textures.get(texture);
+          if (!tex) {
+            tex = texture.__$createTexture(gl);
+            cache.textures.set(texture, tex);
+          }
+          gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+          if (currentUniforms[uniformName] !== texture) {
+            gl.uniform1i(uniformLocation, currentTexture);
+            currentUniforms[uniformName] = texture;
+          }
+        };
       case gl.SAMPLER_2D:
         var currentTexture = textureCounter++;
         return function (texture) {
