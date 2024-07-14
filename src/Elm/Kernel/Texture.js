@@ -18,7 +18,6 @@ var _Texture_loadCube = F6(function (xPosUrl, xNegUrl, yPosUrl, yNegUrl, zPosUrl
     }
 
     function createTexture(gl) {
-      // console.log('createTexture TEXTURE_CUBE_MAP');
       var texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
       gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images.xPos);
@@ -40,13 +39,11 @@ var _Texture_loadCube = F6(function (xPosUrl, xNegUrl, yPosUrl, yNegUrl, zPosUrl
     function onImageLoad(event) {
       var img = event.target;
       loaded++;
-      console.log("loaded", loaded);
       var width = img.width;
       var height = img.height;
       var widthPowerOfTwo = (width & (width - 1)) === 0;
       var heightPowerOfTwo = (height & (height - 1)) === 0;
       var isSizeValid = (widthPowerOfTwo && heightPowerOfTwo);
-      console.log('isSizeValid', isSizeValid)
       if (!isSizeValid) {
         errors++
       }
@@ -70,7 +67,6 @@ var _Texture_loadCube = F6(function (xPosUrl, xNegUrl, yPosUrl, yNegUrl, zPosUrl
     }
 
     function onError(e) {
-      console.log("error", e);
       callback(__Scheduler_fail(__Texture_LoadError));
     }
 
@@ -134,7 +130,6 @@ var _Texture_load = F6(function (magnify, mininify, horizontalWrap, verticalWrap
         && horizontalWrap === 33071 // clamp to edge
         && verticalWrap === 33071
       );
-      console.log('isSizeValid', isSizeValid)
       if (isSizeValid) {
         callback(__Scheduler_succeed({
           $: __0_TEXTURE,
