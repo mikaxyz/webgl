@@ -1,0 +1,9 @@
+{
+  "name": "mikaxyz-elm-webgl",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Experimental fork of elm-explorations/webgl with some added functionality",
+  "main": "index.js",
+  "author": "me@mika.xyz",
+  "license": "BSD-3-Clause"
+}
