@@ -20,6 +20,7 @@ var _Texture_loadCube = F6(function (xPosUrl, xNegUrl, yPosUrl, yNegUrl, zPosUrl
     function createTexture(gl) {
       var texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images.xPos);
       gl.texImage2D(gl.TEXTURE_CUBE_MAP_NEGATIVE_X, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images.xNeg);
       gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_Y, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, images.yPos);
